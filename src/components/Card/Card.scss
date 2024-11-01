@@ -1,0 +1,42 @@
+.card {
+  display: flex;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.082);
+
+  &__image {
+    width: 250px;
+    height: 250px;
+  }
+  &__title {
+    font-size: 25px;
+    font-weight: 500;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__action {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__button {
+    width: max-content;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    &:hover { background-color: rgba(137, 226, 59, 0.692); }
+  }
+
+  &__form {
+    display: flex;
+    gap: 10px;
+  }
+
+}

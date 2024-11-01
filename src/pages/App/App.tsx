@@ -3,44 +3,48 @@ import './App.scss';
 import API_URL from '../../services/constants';
 import { ApiResultsType } from '../../services/types';
 import Card from '../../components/Card/Card';
-
 import { throttle } from '../../services/helpers';
 
 function App() {
   const [characters, setCharacters] = useState<ApiResultsType[]>([]);
-  const [nextPage, setNextPage] = useState<string | null>(null);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [fetching, setFetching] = useState(true);
   const [totalCharacters, setTotalCharacters] = useState(0);
-
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const DELAY = 200;
 
   useEffect(() => {
     async function fetchCharacters() {
       try {
-        let response = await fetch(API_URL)
+        const response = await fetch(`${API_URL}${currentPage}`)
         const data = await response.json();
         setTotalCharacters(data.info.count);
-        setCharacters(data.results);
-        setNextPage(data.info.next);
-        setIsDataLoading(false);
+        setCharacters([...characters, ...data.results]);
+        setTotalPages(data.info.pages);
+        setCurrentPage(prevState => prevState + 1);
+
       } catch (e) {
         console.error(e);
+        setFetching(false);
       }
     }
 
-    if (characters.length === 0) {
-        fetchCharacters();
-    };
+    if (fetching && (currentPage === 1 || currentPage <= totalPages)) {
+     fetchCharacters();
+    }
 
-    window.addEventListener('scroll', throttle(checkPosition, 1000));
-    window.addEventListener('resize', throttle(checkPosition, 1000));
 
-    return () => {
-      window.removeEventListener('scroll', throttle(checkPosition, 1000));
-      window.removeEventListener('resize', throttle(checkPosition, 1000));
-    };
-  },[characters.length]);
+  }, [characters, currentPage, fetching, totalPages]);
 
-  function checkPosition(): void {
+  useEffect(() => {
+    window.addEventListener('scroll', throttle(checkPosition, DELAY));
+
+    return function cleanup() {
+      window.removeEventListener('scroll', throttle(checkPosition, DELAY));
+    }
+  }, []);
+
+  const checkPosition = (): void =>  {
     const bodyHeight = Math.max(
       document.body.scrollHeight, document.documentElement.scrollHeight,
       document.body.offsetHeight, document.documentElement.offsetHeight,
@@ -53,32 +57,10 @@ function App() {
     const bottomPosition = userHaveScrolled + screenHeight;
 
     if (bottomPosition >= threshold) {
-      if (nextPage !== null && !isDataLoading) {
-        getNextPageCharacters();
-        setIsDataLoading(true);
-      };
+      setFetching(true);
     }
   };
 
-  async function  getNextPageCharacters() {
-    if (nextPage === null || isDataLoading) {
-      return;
-    }
-    try {
-      const response = await fetch(nextPage)
-      const data = await response.json();
-      if (data.results) {
-        const newCharacters = characters;
-        newCharacters.push(...data.results);
-        setCharacters(newCharacters);
-        setNextPage(data.info.next);
-        setIsDataLoading(false);
-      }
-
-    } catch (e) {
-      console.error(e);
-    }
-}
 
   const renderCharactersCount = () => {
     if (totalCharacters > 0) {
@@ -93,7 +75,7 @@ function App() {
       return;
     }
     const newCharacters = characters.filter((character) => character.id !== id);
-    setCharacters([ ...characters, ...newCharacters ]);
+    setCharacters(newCharacters);
   }
 
   const editCharacterName = (id: number, newName: string) => () => {
@@ -106,13 +88,13 @@ function App() {
       }
       return character;
     });
-    setCharacters([ ...characters, ...newCharacters ]);
+    setCharacters(newCharacters);
   }
 
   const renderCharactersList = () => {
     if (characters.length > 0) {
       return (
-        <ul>
+        <ul className='cards-list'>
           {characters.map((character) => (
             <Card key={character.id} character={character} onDelete={deleteCharacter} onEditName={editCharacterName}/>
           ))}
@@ -129,7 +111,7 @@ function App() {
       <main>
         {renderCharactersCount()}
         {renderCharactersList()}
-        {isDataLoading && <p>Загрузка...</p>}
+        {fetching && <div className='loader-container'><span className="loader"></span></div>}
 
       </main>
       <footer></footer>
