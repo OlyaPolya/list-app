@@ -25,6 +25,8 @@ function App() {
 
       } catch (e) {
         console.error(e);
+
+      } finally {
         setFetching(false);
       }
     }
@@ -34,7 +36,7 @@ function App() {
     }
 
 
-  }, [characters, currentPage, fetching, totalPages]);
+  }, [fetching]);
 
   useEffect(() => {
     window.addEventListener('scroll', throttle(checkPosition, DELAY));
